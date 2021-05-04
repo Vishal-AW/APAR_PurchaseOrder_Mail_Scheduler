@@ -38,6 +38,8 @@ namespace APAR_PurchaseOrder_Mail_Scheduler
                 SPPurchaseOrder = CustomSharePointUtility.GetAll_PurchaseOrderFromSharePoint(siteUrl, TestingPurchaseHeaderList, DaysDifference);
                 //List<TravelVoucher> empMasterFinal = new List<TravelVoucher>();
                 List<PurchaseOrder> purchaseDataFinal = SPPurchaseOrder;
+
+                Console.WriteLine("total count" + purchaseDataFinal.Count);
                 if (purchaseDataFinal.Count > 0)
                 {
                     for (var i = 0; i < purchaseDataFinal.Count; i++)
@@ -53,26 +55,30 @@ namespace APAR_PurchaseOrder_Mail_Scheduler
                                 CustomSharePointUtility.PurchaseApproversData(purchaseDataFinal[i], RootsiteUrl, siteUrl, PurchaseApprovers, EmailList);
                             }
                         }
-                        else if(purchaseDataFinal[i].LocationType == "Plant"){
-                            if (purchaseDataFinal[i].ApprovalStatus == "Submitted")
-                            {
-                                CustomSharePointUtility.PurchaseApproversData(purchaseDataFinal[i], RootsiteUrl, siteUrl, PurchaseApprovers, EmailList);
-                            }
-                            else if (purchaseDataFinal[i].ApprovalStatus == "Approved By Purchase Head")
-                            {
-                                CustomSharePointUtility.PurchaseApproversData(purchaseDataFinal[i], RootsiteUrl, siteUrl, PurchaseApprovers, EmailList);
-                            }
-                            else if (purchaseDataFinal[i].ApprovalStatus == "Approved By Plant Head")
-                            {
-                                CustomSharePointUtility.PurchaseApproversData(purchaseDataFinal[i], RootsiteUrl, siteUrl, PurchaseApprovers, EmailList);
+                        else if (purchaseDataFinal[i].LocationType == "Plant")
+                        {
+                            //if (purchaseDataFinal[i].ApprovalStatus == "Submitted")
+                            //{
+                            //    CustomSharePointUtility.PurchaseApproversData(purchaseDataFinal[i], RootsiteUrl, siteUrl, PurchaseApprovers, EmailList);
+                            //}
+                            //else if (purchaseDataFinal[i].ApprovalStatus == "Approved By Purchase Head")
+                            //{
+                            //    CustomSharePointUtility.PurchaseApproversData(purchaseDataFinal[i], RootsiteUrl, siteUrl, PurchaseApprovers, EmailList);
+                            //}
+                            //else if (purchaseDataFinal[i].ApprovalStatus == "Approved By Plant Head")
+                            //{
+                            //    CustomSharePointUtility.PurchaseApproversData(purchaseDataFinal[i], RootsiteUrl, siteUrl, PurchaseApprovers, EmailList);
+                            //}
+                            if (purchaseDataFinal[i].NewFlow == "Yes")
+                            { 
+                                CustomSharePointUtility.PurchaseApproversDataPlant(purchaseDataFinal[i], RootsiteUrl, siteUrl, PurchaseApprovers, EmailList);
                             }
                         }
                         Console.WriteLine("No Pending Records." + i);
 
                     }
 
-                    Console.ReadKey();
-
+                   
                     //Console.WriteLine("Employee data synchronized successfully.");
                     //var success = CustomSharePointUtility.EmailData(empMasterFinal, siteUrl, EmailList);
                     //if (success)

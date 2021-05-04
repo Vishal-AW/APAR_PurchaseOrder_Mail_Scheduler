@@ -26,6 +26,9 @@ namespace APAR_PurchaseOrder_Mail_Scheduler.Models
         public string ApprovalStatus { get; set; }
         public string FHCode { get; set; }
         public string Modified { get; set; }
+        public string CurrentApprover { get; set; }
+        public string NewStatus { get; set; }
+        public string NewFlow { get; set; }
 
     }
     public class EmployeeMaster

@@ -83,13 +83,13 @@ namespace APAR_PurchaseOrder_Mail_Scheduler.Models
 
                 //  logFile.WriteLine(DateTime.Now);
                 //  logFile.WriteLine(logmsg.ToString());
-                logFile.WriteLine(LogString);
+               // logFile.WriteLine(LogString);
 
                 //logFile.Close();
             }
             catch (Exception ex)
             {
-                WriteLog(ex.ToString());
+                //WriteLog(ex.ToString());
 
             }
 
@@ -180,6 +180,10 @@ namespace APAR_PurchaseOrder_Mail_Scheduler.Models
                                 <FieldRef Name='ApprovalStatus'/>
                                 <FieldRef Name='FHCode'/>
                                 <FieldRef Name='Modified'/>
+                                <FieldRef Name='CurrentApprover'/>
+                                <FieldRef Name='NewStatus'/>
+                                <FieldRef Name='NewFlow'/>
+
                                 </ViewFields></View>";
 
                             //   camlQuery.ViewXml = "<View><Query><Where><Eq><FieldRef Name='ID' /><Value Type='Counter'>769</Value></Eq></Where></Query></View>";
@@ -217,6 +221,9 @@ namespace APAR_PurchaseOrder_Mail_Scheduler.Models
                                     ApprovalStatus = Convert.ToString(item["ApprovalStatus"]).Trim(),
                                     FHCode = Convert.ToString(item["FHCode"]).Trim(),
                                     Modified = Convert.ToString(item["Modified"]).Trim(),
+                                    CurrentApprover = Convert.ToString(item["CurrentApprover"]).Trim(),
+                                    NewStatus = Convert.ToString(item["NewStatus"]).Trim(),
+                                    NewFlow = Convert.ToString(item["NewFlow"]).Trim(),
                                 });
                             }
                             if (itemPosition == null)
@@ -377,6 +384,117 @@ namespace APAR_PurchaseOrder_Mail_Scheduler.Models
             }
             return _returnList;
         }
+
+        public static List<PurchaseApprovers> PurchaseApproversDataPlant(PurchaseOrder purchaseDataFinal, string RootsiteUrl, string siteUrl, string listName, string EmaillistName)
+        {
+            List<PurchaseApprovers> _returnList = new List<PurchaseApprovers>();
+            try
+            {
+                var success = CustomSharePointUtility.EmailDataPlant(purchaseDataFinal, siteUrl, EmaillistName);
+                if (success) { }
+            }
+            catch (Exception ex)
+            {
+                CustomSharePointUtility.WriteLog("Error in  PurchaseApproversData()" + " Error:" + ex.Message);
+            }
+             
+            return _returnList;
+        }
+
+        public static bool EmailDataPlant(PurchaseOrder updationList, string siteUrl, string listName)
+        {
+            bool retValue = false;
+            try
+            {
+
+                using (MSC.ClientContext context = CustomSharePointUtility.GetContext(siteUrl))
+                {
+                    //List<Mailing> varx = new List<Mailing>();
+
+                    MSC.List list = context.Web.Lists.GetByTitle(listName);
+                  
+                    MSC.ListItem listItem = null;
+
+                    MSC.ListItemCreationInformation itemCreateInfo = new MSC.ListItemCreationInformation();
+                    listItem = list.AddItem(itemCreateInfo);
+
+                    var obj = new Object();
+                     
+                    var _To = "";
+                    var _Body = "";
+                    var _Subject = "";
+                    
+                    _To = updationList.CurrentApprover;
+                    
+
+                    _Subject = "Gentle Reminder";
+                    _Body += "Dear User, <br><br>This is to inform you that below request is pending for your Approval.";
+                    _Body += "<br><b>Workflow Name :</b> Purchase Order ";
+                    _Body += "<br><b>Voucher No :</b>  " + updationList.POReferenceNumber;
+                    _Body += "<br><b>Date of Creation :</b>  " + updationList.Created;
+                    _Body += "<br><b>Employee : </b> " + updationList.Author;
+
+                    _Body += "<br><b>Department :</b> " + updationList.DepartmentName;
+                    _Body += "<br><b>Location :</b> " + updationList.LocationName;
+                    _Body += "<br><b>PO No : </b> " + updationList.PONumber;
+                    _Body += "<br><b> PO Amount : </b> " + updationList.POCost;
+                    _Body += "<br><b> Material Details : </b> " + updationList.MaterialDetails;
+                    
+                    if (updationList.NewStatus == "1")
+                    {
+                        _Body += "<br><b>Status :</b> Pending With Purchase Head";
+                    }
+                    else if (updationList.NewStatus == "2")
+                    {
+                        _Body += "<br><b>Status :</b> Pending With Plant Head";
+                    }
+                   
+
+                    _Body += "<br><h3>Kindly provide your approval</h3>";
+                    _Body += "<br><h3>For Approval Please Click in the below link</h3>";
+                    if (updationList.NewStatus == "1")
+                    {
+                 ///       _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithApprover.aspx\">View Link</a>";
+                    }
+                    else if (updationList.NewStatus == "2")
+                    {
+                  ///      _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithManagingDirector.aspx\">View Link</a>";
+                    }
+                    
+                    listItem["ToUser"] = _To;
+                    listItem["SubjectDesc"] = _Subject;
+                    listItem["BodyDesc"] = _Body;
+                     
+                    if (_To != "")
+                    {
+                       listItem.Update();
+                    }
+                    try
+                    {
+                      context.ExecuteQuery();
+                        retValue = true;
+
+                    }
+                    catch (Exception ex)
+                    {
+                        CustomSharePointUtility.WriteLog(string.Format("Error in  InsertUpdate_EmployeeMaster ( context.ExecuteQuery();): Error ({0}) ", ex.Message));
+                        return false;
+                        //continue;
+                    }
+                }
+
+               
+            }
+
+            catch (Exception ex)
+            {
+                CustomSharePointUtility.WriteLog(string.Format("Error in  InsertUpdate_EmployeeMaster: Error ({0}) ", ex.Message));
+            }
+            return retValue;
+
+        }
+
+
         public static bool EmailData(PurchaseOrder updationList, string FunctionalHeadEmail, string PurchaseHead, string PlantHead, string MD, string siteUrl, string listName)
         {
             bool retValue = false;
@@ -467,23 +585,23 @@ namespace APAR_PurchaseOrder_Mail_Scheduler.Models
                         _Body += "<br><h3>For Approval Please Click in the below link</h3>";
                         if (updationList.ApprovalStatus == "Submitted" && updationList.LocationType == "Office")
                         {
-                            _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithFunctionalHead.aspx\">View Link</a>";
+                   //         _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithFunctionalHead.aspx\">View Link</a>";
                         }
                         else if (updationList.ApprovalStatus == "Approved By Functional Head" && updationList.LocationType == "Office")
                         {
-                            _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithMD.aspx\">View Link</a>";
+                     //       _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithMD.aspx\">View Link</a>";
                         }
                         else if (updationList.ApprovalStatus == "Submitted" && updationList.LocationType == "Plant")
                         {
-                            _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithPurchaseHead.aspx\">View Link</a>";
+                     //       _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithPurchaseHead.aspx\">View Link</a>";
                         }
                         else if (updationList.ApprovalStatus == "Approved By Purchase Head" && updationList.LocationType == "Plant")
                         {
-                            _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithPlantHead.aspx\">View Link</a>";
+                       //     _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithPlantHead.aspx\">View Link</a>";
                         }
                         else if (updationList.ApprovalStatus == "Approved By Plant Head" && updationList.LocationType == "Plant")
                         {
-                            _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithMD.aspx\">View Link</a>";
+                      //      _Body += "<br><a href=\"https://aparindltd.sharepoint.com/PurchaseOrder/SitePages/PendingWithManagingDirector.aspx\">View Link</a>";
                         }
 
                     //data.MailTo = _From;
@@ -497,11 +615,11 @@ namespace APAR_PurchaseOrder_Mail_Scheduler.Models
                     listItem["BodyDesc"] = _Body;
                 if (_To != "")
                 {
-                  //  listItem.Update();
+                    listItem.Update();
                 }
                     try
                     {
-                  //    context.ExecuteQuery();
+                    context.ExecuteQuery();
                         retValue = true;
 
                     }
